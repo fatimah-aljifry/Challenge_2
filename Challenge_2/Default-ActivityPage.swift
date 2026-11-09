@@ -9,7 +9,42 @@ import SwiftUI
 
 struct Default_ActivityPage: View {
     var body: some View {
-        Text(/*@START_MENU_TOKEN@*/"Hello, World!"/*@END_MENU_TOKEN@*/)
+      
+        ZStack{
+            Color(.black)
+                .ignoresSafeArea()
+            
+            VStack{
+                
+               Text("Activity")
+                    .foregroundStyle(.white)
+                    .font(.largeTitle)
+                    .fontWeight(.bold)
+                    .multilineTextAlignment(.leading)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                
+                Text("Thursday , 24 October") //Use the Foundation Calander
+                    .foregroundStyle(.gray)
+                    .multilineTextAlignment(.leading)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                
+                
+                
+                
+                
+            }
+            
+            
+        }
+        
+        
+        
+        
+        
+        
+        
+        
+        
     }
 }
 
