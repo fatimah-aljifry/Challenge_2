@@ -86,14 +86,14 @@ struct Onboarding: View {
                         
                     }
                     .buttonStyle(.glass)
-                    .foregroundStyle(.gray)
+                    .foregroundStyle(.white .opacity(0.3))
                     .controlSize(.large)
                     Button("Year"){
                         
                         
                     }
                     .buttonStyle(.glass)
-                    .foregroundStyle(.gray)
+                    .foregroundStyle(.white .opacity(0.3))
                     .controlSize(.large)
                 }                    .multilineTextAlignment(.leading)
                     .frame(maxWidth: .infinity, alignment: .leading)
