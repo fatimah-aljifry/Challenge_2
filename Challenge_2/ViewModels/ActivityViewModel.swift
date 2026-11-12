@@ -70,14 +70,15 @@ final class ActivityViewModel {
 
     // MARK: - Actions
 
-    func logLearned() {
-        refresh()
-        store.log(.learned, now: now)
+    /// `date` defaults to the real current time; passing a date lets the rules be checked with made-up times.
+    func logLearned(at date: Date = .now) {
+        refresh(at: date)
+        store.log(.learned, now: date)
     }
 
-    func freezeToday() {
-        refresh()
-        store.log(.frozen, now: now)
+    func freezeToday(at date: Date = .now) {
+        refresh(at: date)
+        store.log(.frozen, now: date)
     }
 
     /// Moves the screen to the current time and applies the 32-hour rule.

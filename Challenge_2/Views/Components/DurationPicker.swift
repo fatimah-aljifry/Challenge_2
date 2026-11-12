@@ -20,8 +20,9 @@ struct DurationPicker: View {
                         .tint(.orange)
                         .accessibilityAddTraits(.isSelected)
                 } else {
+                    // Clear glass: the more see-through Liquid Glass variant, so it reads dark on black.
                     Button(duration.title) { selection = duration }
-                        .buttonStyle(.glass)
+                        .buttonStyle(.glass(.clear))
                         .foregroundStyle(.white.opacity(0.3))
                 }
             }

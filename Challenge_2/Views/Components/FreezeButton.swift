@@ -23,7 +23,7 @@ struct FreezeButton: View {
 
     var body: some View {
         Button(action: action) {
-            Text(todayStatus == .frozen ? "Freezed for a day" : "Log as Freezed")
+            Text(todayStatus == .frozen ? "Freezed for a day" : "Freeze for a day")
                 .frame(width: 240)
         }
         .buttonStyle(.glassProminent)

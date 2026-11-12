@@ -79,4 +79,5 @@ struct OnboardingView: View {
     // A throwaway store so the preview never touches the app's real saved data.
     OnboardingView()
         .environment(LearningStore(defaults: UserDefaults(suiteName: "preview") ?? .standard))
+        .preferredColorScheme(.dark)
 }

@@ -67,17 +67,12 @@ struct ActivityView: View {
                     .fontWeight(.bold)
                     .frame(maxWidth: .infinity, alignment: .leading)
 
-                Button(action: onEditGoal) {
-                    headerIcon("pencil.and.outline")
-                }
-                .buttonStyle(.glass)
-                .accessibilityLabel("Edit learning goal")
+                // The title isn't shown (icon only) but VoiceOver reads it.
+                Button("Edit learning goal", systemImage: "pencil.and.outline", action: onEditGoal)
+                    .modifier(HeaderIconStyle())
 
-                Button(action: onOpenCalendar) {
-                    headerIcon("calendar")
-                }
-                .buttonStyle(.glass)
-                .accessibilityLabel("Calendar")
+                Button("Calendar", systemImage: "calendar", action: onOpenCalendar)
+                    .modifier(HeaderIconStyle())
             }
 
             Text(viewModel.headerDate)
@@ -86,7 +81,7 @@ struct ActivityView: View {
         }
     }
 
-    /// The rounded box with this week's days and the two count cards.
+    /// This week's days and the two count cards.
     private var progressBox: some View {
         VStack(spacing: 16) {
             WeekStripView(days: viewModel.currentWeek, today: viewModel.now) { day in
@@ -97,12 +92,6 @@ struct ActivityView: View {
                 StatCard(systemImage: "flame.fill", tint: .orange, value: viewModel.streakText, label: "Learned")
                 StatCard(systemImage: "snowflake", tint: .cyan, value: viewModel.freezeText, label: "Freezed")
             }
-        }
-        .padding(16)
-        .background {
-            RoundedRectangle(cornerRadius: 24)
-                .fill(Color(white: 0.07))
-                .stroke(Color.white.opacity(0.1), lineWidth: 1)
         }
     }
 
@@ -129,11 +118,18 @@ struct ActivityView: View {
         }
     }
 
-    private func headerIcon(_ systemName: String) -> some View {
-        Image(systemName: systemName)
+}
+
+/// Shared look for the two round glass buttons in the header.
+private struct HeaderIconStyle: ViewModifier {
+    func body(content: Content) -> some View {
+        content
+            .labelStyle(.iconOnly)
             .font(.system(size: 24, weight: .bold))
             .foregroundStyle(.white)
-            .frame(width: 36, height: 44)
+            .buttonStyle(.glass)
+            .buttonBorderShape(.circle)
+            .controlSize(.large)
     }
 }
 
@@ -184,7 +180,8 @@ private func previewViewModel(
 }
 
 #Preview("Well done") {
-    ActivityView(viewModel: previewViewModel("done", startedDaysAgo: 6, logs: (0...6).map { ($0, .learned) }))
+    // Oldest day first, the same order a real user would log in.
+    ActivityView(viewModel: previewViewModel("done", startedDaysAgo: 6, logs: (0...6).reversed().map { ($0, .learned) }))
         .preferredColorScheme(.dark)
 }
 

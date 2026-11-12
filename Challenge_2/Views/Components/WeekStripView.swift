@@ -17,10 +17,11 @@ struct WeekStripView: View {
         HStack(spacing: 0) {
             ForEach(days, id: \.self) { day in
                 VStack(spacing: 8) {
-                    Text(day, format: .dateTime.weekday(.abbreviated))
-                        .font(.caption.weight(.semibold))
+                    // Single capital initial: S M T W T F S
+                    Text(day, format: .dateTime.weekday(.narrow))
+                        .font(.subheadline.weight(.semibold))
                         .textCase(.uppercase)
-                        .foregroundStyle(.gray)
+                        .foregroundStyle(.white)
                         .accessibilityHidden(true)
 
                     DayCircle(

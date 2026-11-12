@@ -15,16 +15,18 @@ final class LearningStore {
     /// How long the user can go without logging (learned or frozen) before the streak breaks.
     static let streakTimeout: TimeInterval = 32 * 60 * 60
 
+    /// The UserDefaults key `AppData` is saved under.
+    private static let storageKey = "appData"
+
     private(set) var data: AppData
 
     @ObservationIgnored private let defaults: UserDefaults
     @ObservationIgnored private let calendar: Calendar
-    @ObservationIgnored private let storageKey = "appData"
 
     init(defaults: UserDefaults = .standard, calendar: Calendar = .current) {
         self.defaults = defaults
         self.calendar = calendar
-        self.data = Self.load(from: defaults, key: "appData")
+        self.data = Self.load(from: defaults)
     }
 
     // MARK: - Reading
@@ -34,13 +36,22 @@ final class LearningStore {
     var registrationDate: Date? { data.registrationDate }
 
     /// How a given day was logged, or `nil` if it wasn't. Used by the week strip and the Calendar.
+    /// If the day has two logs (goal updated in between), learned wins over frozen.
     func status(for date: Date) -> DayStatus? {
-        data.logs.first { calendar.isDate($0.day, inSameDayAs: date) }?.status
+        let dayLogs = data.logs.filter { calendar.isDate($0.day, inSameDayAs: date) }
+        if dayLogs.contains(where: { $0.status == .learned }) { return .learned }
+        if dayLogs.contains(where: { $0.status == .frozen }) { return .frozen }
+        return nil
     }
 
-    /// How today was logged, or `nil` if the user can still log today.
+    /// How today was logged *for the current goal*, or `nil` if the user can still log today.
+    /// A log made before the goal was updated doesn't count, so the user can log again.
     func todayStatus(now: Date = .now) -> DayStatus? {
-        status(for: now)
+        guard let goalStart = data.goal?.startDate else { return nil }
+        return data.logs
+            .filter { $0.loggedAt >= goalStart && calendar.isDate($0.day, inSameDayAs: now) }
+            .max { $0.loggedAt < $1.loggedAt }?
+            .status
     }
 
     /// Learned days since the current streak began.
@@ -61,15 +72,26 @@ final class LearningStore {
         return max(0, goal.duration.freezeLimit - freezesUsed)
     }
 
-    /// Whether the goal is still running, or ended with or without the streak intact.
-    func outcome(now: Date = .now) -> GoalOutcome {
-        guard let goal = data.goal, goal.hasEnded(at: now) else { return .inProgress }
-        guard let streakStart = data.streakStartDate else { return .missed }
+    /// The moment the current streak will break if nothing is logged (last activity + 32 hours).
+    /// The Activity screen uses it to refresh exactly when the streak runs out.
+    var streakDeadline: Date? {
+        lastActivity.map { $0.addingTimeInterval(Self.streakTimeout) }
+    }
 
-        // The streak survived only if it was never reset during the goal
-        // and it hadn't run out by the time the goal ended.
-        let neverReset = streakStart <= goal.startDate
-        return neverReset && !isStreakBroken(at: goal.endDate) ? .completed : .missed
+    /// Whether the goal is still running, was completed, or was missed.
+    ///
+    /// - `.completed` as soon as streak days + freeze days equals the goal's length in days
+    ///   (e.g. 7 for a week). Since there is one log per day per goal, this happens on the last day's log,
+    ///   so "Well done!" shows right away.
+    /// - `.missed` at midnight after the last day if that total wasn't reached.
+    /// - `.inProgress` otherwise.
+    func outcome(now: Date = .now) -> GoalOutcome {
+        guard let goal = data.goal else { return .inProgress }
+
+        if streakCount + freezesUsed >= goal.dayCount(calendar: calendar) {
+            return .completed
+        }
+        return goal.hasEnded(at: now, calendar: calendar) ? .missed : .inProgress
     }
 
     // MARK: - Writing
@@ -83,13 +105,16 @@ final class LearningStore {
     }
 
     /// Called when the user confirms "Update" in the Learning Goal alert.
-    /// Today's log is removed so the user can log again for the new goal; earlier days are kept.
+    /// - Today's *learned* log is kept, so today still shows as learned.
+    /// - Today's *freeze* is removed, so today shows as not logged until the new goal logs.
+    /// - Earlier days are never touched.
+    /// The streak and freezes restart at 0, and the user can log again today for the new goal.
     func updateGoal(topic: String, duration: GoalDuration, now: Date = .now) {
-        data.logs.removeAll { calendar.isDate($0.day, inSameDayAs: now) }
+        data.logs.removeAll { $0.status == .frozen && calendar.isDate($0.day, inSameDayAs: now) }
         beginGoal(topic: topic, duration: duration, now: now)
     }
 
-    /// Logs today as learned or frozen. Does nothing if today is already logged,
+    /// Logs today as learned or frozen. Does nothing if today is already logged for this goal,
     /// the goal has ended, or (for a freeze) no freezes are left.
     func log(_ status: DayStatus, now: Date = .now) {
         checkStreak(now: now)
@@ -111,7 +136,7 @@ final class LearningStore {
         guard let goal = data.goal else { return }
 
         // Only look at time inside the goal, so the streak can't break after the goal is over.
-        let checkDate = min(now, goal.endDate)
+        let checkDate = min(now, goal.endDate(calendar: calendar))
         guard isStreakBroken(at: checkDate) else { return }
 
         data.streakStartDate = checkDate
@@ -128,25 +153,29 @@ final class LearningStore {
         save()
     }
 
-    /// True if more than 32 hours passed between the last activity and `date`.
-    /// "Last activity" is the latest log in the current streak, or the streak's start if there is none.
-    private func isStreakBroken(at date: Date) -> Bool {
-        guard let streakStart = data.streakStartDate else { return false }
+    /// The latest log in the current streak, or the streak's start if there is none.
+    private var lastActivity: Date? {
+        guard let streakStart = data.streakStartDate else { return nil }
         let lastLog = data.logs
             .filter { $0.loggedAt >= streakStart }
             .map(\.loggedAt)
             .max()
-        let lastActivity = lastLog ?? streakStart
+        return lastLog ?? streakStart
+    }
+
+    /// True if more than 32 hours passed between the last activity and `date`.
+    private func isStreakBroken(at date: Date) -> Bool {
+        guard let lastActivity else { return false }
         return date.timeIntervalSince(lastActivity) > Self.streakTimeout
     }
 
     private func save() {
         guard let encoded = try? JSONEncoder().encode(data) else { return }
-        defaults.set(encoded, forKey: storageKey)
+        defaults.set(encoded, forKey: Self.storageKey)
     }
 
-    private static func load(from defaults: UserDefaults, key: String) -> AppData {
-        guard let saved = defaults.data(forKey: key),
+    private static func load(from defaults: UserDefaults) -> AppData {
+        guard let saved = defaults.data(forKey: storageKey),
               let decoded = try? JSONDecoder().decode(AppData.self, from: saved)
         else { return AppData() }
         return decoded

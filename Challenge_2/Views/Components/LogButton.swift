@@ -35,7 +35,7 @@ struct LogButton: View {
     private var label: some View {
         // Kept on one horizontal line; shrinks slightly instead of wrapping.
         Text(state == .ready ? "Log as Learned" : "Logged as Learned")
-            .font(.title3.weight(.semibold))
+            .font(.title3.bold())
             .foregroundStyle(state == .ready ? .white : .gray)
             .lineLimit(1)
             .minimumScaleFactor(0.5)

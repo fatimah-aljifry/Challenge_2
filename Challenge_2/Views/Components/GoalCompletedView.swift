@@ -14,30 +14,45 @@ struct GoalCompletedView: View {
     private var isSuccess: Bool { outcome == .completed }
 
     var body: some View {
-        VStack(spacing: 12) {
-            Image(systemName: isSuccess ? "hands.clap.fill" : "xmark.circle")
-                .font(.system(size: 44))
-                .foregroundStyle(.orange)
+        VStack(spacing: 0) {
+            icon
                 .accessibilityHidden(true)
+                .padding(.bottom, 20)
 
             Text(isSuccess ? "Well done!" : "You didn't reach your goal this time.")
-                .font(.title2.bold())
+                .font(.headline)
                 .foregroundStyle(.white)
                 .multilineTextAlignment(.center)
+                .padding(.bottom, 6)
 
-            Text(isSuccess ? "Goal completed! Set a new learning goal to keep going." : "Want to set another goal?")
+            Text(isSuccess ? "Ready for your next goal?" : "Want to set another goal?")
+                .font(.subheadline)
                 .foregroundStyle(.gray)
                 .multilineTextAlignment(.center)
 
-            Button("Set new goal", action: onSetNewGoal)
-                .buttonStyle(.glassProminent)
-                .tint(.orange)
-                .font(.title3)
-                .fontWeight(.medium)
-                .controlSize(.large)
-                .padding(.top, 12)
+            // Same large gap on both versions, as in the design.
+            Button(action: onSetNewGoal) {
+                buttonLabel
+            }
+            .buttonStyle(.glassProminent)
+            .tint(.orange)
+            .controlSize(.large)
+            .padding(.top, 90)
         }
         .padding(.horizontal)
+    }
+
+    /// Pencil symbol on the far left, then the title.
+    private var buttonLabel: some View {
+        Label("Set a goal", systemImage: "pencil.and.outline")
+    }
+
+    /// Custom icons from the asset catalog: clapping on success, crossed seal otherwise.
+    private var icon: some View {
+        Image(isSuccess ? "clapping" : "goalMissed")
+            .resizable()
+            .scaledToFit()
+            .frame(width: 44, height: 44)
     }
 }
 

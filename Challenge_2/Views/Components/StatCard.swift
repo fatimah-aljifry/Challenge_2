@@ -30,7 +30,8 @@ struct StatCard: View {
             }
         }
         .frame(maxWidth: .infinity, minHeight: 70)
-        .glassEffect(.regular.tint(tint.opacity(0.25)), in: .rect(cornerRadius: 34))
+        // Solid dark tint instead of glass: tinted glass looks washed out on the black screen.
+        .background(tint.opacity(0.2), in: .rect(cornerRadius: 34))
         .accessibilityElement(children: .combine)
     }
 }
@@ -38,7 +39,7 @@ struct StatCard: View {
 #Preview {
     HStack {
         StatCard(systemImage: "flame.fill", tint: .orange, value: "4 Days", label: "Learned")
-        StatCard(systemImage: "cube.fill", tint: .cyan, value: "1 Day", label: "Freezed")
+        StatCard(systemImage: "snowflake", tint: .cyan, value: "1 Day", label: "Freezed")
     }
     .padding()
     .background(.black)

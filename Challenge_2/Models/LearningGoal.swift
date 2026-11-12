@@ -21,10 +21,10 @@ struct LearningGoal: Codable, Equatable {
         duration.endDate(from: calendar.startOfDay(for: startDate), calendar: calendar)
     }
 
-    /// The start of the goal's last day, e.g. the Sunday of a Monday–Sunday week.
-    func lastDay(calendar: Calendar = .current) -> Date {
-        let end = endDate(calendar: calendar)
-        return calendar.date(byAdding: .day, value: -1, to: end) ?? end
+    /// How many calendar days the goal covers: 7 for a week, 28–31 for a month, 365–366 for a year.
+    func dayCount(calendar: Calendar = .current) -> Int {
+        let firstDay = calendar.startOfDay(for: startDate)
+        return calendar.dateComponents([.day], from: firstDay, to: endDate(calendar: calendar)).day ?? 0
     }
 
     /// True once midnight after the last day has passed.
